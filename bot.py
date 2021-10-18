@@ -1,14 +1,32 @@
 import websocket, json, pprint, talib, numpy
+import config
+from binance.client import Client
+from binance.enums import *
+
 
 SOCKET = "wss://stream.binance.com:9443/ws/ethusdt@kline_1m"
 
-closes = [3868.2, 3866.1, 3860.0, 3862.56, 3860.1, 3861.1, 3859.0, 3856.2, 3854.51, 3851.0, 3845.6, 3843.2, 3841.0, 3839.65, 3839.88]
+closes = []
 
 RSI_PERIOD = 14
 RSI_OVERBOUGHT = 70
 RSI_OVERSOLD = 30
 TRADE_SYMBOL = 'ETHUSDT'
 TRADE_QUANTITY = 0.005
+in_position = False
+
+
+client = Client(config.API_KEY, config.API_SECRET, tld='us')
+
+def order(symbol, side, quantity, order_type=ORDER_TYPE_MARKET):
+    try:
+        print("Sending order")
+        # CREATE TEST ORDER
+        order = client.create_test_order(symbol=symbol,side=SIDE_BUY,type=ORDER_TYPE_MARKET,quantity=quantity)
+        print(order)
+    except Exception as e:
+        return False
+    return True
 
 def on_open(ws):
     print("connection opened")
@@ -17,7 +35,7 @@ def on_close(ws):
     print("connection closed")
 
 def on_message(ws, message):
-    print("message received")
+    # print("message received")
     json_msg = json.loads(message)
     # pprint.pprint(json_msg)
 
@@ -29,6 +47,7 @@ def on_message(ws, message):
         print("candle closed at {}".format(close))
         closes.append(float(close))
         print("Num of closes so far: {}".format(len(closes)))
+
         if len(closes) > RSI_PERIOD:
             np_closes = numpy.array(closes)
             rsi = talib.RSI(np_closes, RSI_PERIOD)
@@ -38,13 +57,29 @@ def on_message(ws, message):
             print("Current RSI is {}".format(last_rsi))
 
             if last_rsi > RSI_OVERBOUGHT:
-                print("OVERBOUGHT SIGNAL: SELL")
+                if in_position:
+                    print("OVERBOUGHT SIGNAL: PLACE SELL ORDER")
+                    # binance sell order
+                    order_success = order(TRADE_SYMBOL, SIDE_SELL, TRADE_QUANTITY)
+                    if order_succeeded:
+                        in_position = False
+                else:
+                    print("Overbought: Not in position. Nothing to do.")
             if last_rsi < RSI_OVERSOLD:
-                print("OVERSOLD SIGNAL: BUY")
+                if in_position:
+                    print("Oversold: Already in position. Nothing to do.")
+                else:
+                    print("OVERSOLD SIGNAL: PLACE BUY ORDER")
+                    # binance buy order
+                    order_success = order(TRADE_SYMBOL, SIDE_BUY, TRADE_QUANTITY)
+                    if order_success:
+                        in_position = True
+
+
 
 ws = websocket.WebSocketApp(SOCKET, on_open=on_open, on_close=on_close, on_message=on_message)
 
-ws.run_forever()
+ws.run_forever(ping_interval=300)
 
 # Crypto trading bot
 
