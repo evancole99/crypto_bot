@@ -9,22 +9,25 @@ SOCKET = "wss://stream.binance.com:9443/ws/ethusdt@kline_1m"
 closes = []
 
 RSI_PERIOD = 14
-RSI_OVERBOUGHT = 70
-RSI_OVERSOLD = 30
-TRADE_SYMBOL = 'ETHUSDT'
+RSI_OVERBOUGHT = 70.0
+RSI_OVERSOLD = 30.0
+TRADE_SYMBOL = 'ETHUSD'
 TRADE_QUANTITY = 0.005
+
 in_position = False
 
 
 client = Client(config.API_KEY, config.API_SECRET, tld='us')
 
-def order(symbol, side, quantity, order_type=ORDER_TYPE_MARKET):
+def order(symbol, side, quantity, order_type=Client.ORDER_TYPE_MARKET):
     try:
         print("Sending order")
         # CREATE TEST ORDER
-        order = client.create_test_order(symbol=symbol,side=SIDE_BUY,type=ORDER_TYPE_MARKET,quantity=quantity)
+        order = client.create_order(symbol=symbol,side=side,type=order_type,quantity=quantity)
         print(order)
     except Exception as e:
+        print("Order error: Exception occurred.")
+        print(e)
         return False
     return True
 
@@ -35,6 +38,7 @@ def on_close(ws):
     print("connection closed")
 
 def on_message(ws, message):
+    global in_position # ensure function knows variable should be referenced globally
     # print("message received")
     json_msg = json.loads(message)
     # pprint.pprint(json_msg)
@@ -44,34 +48,44 @@ def on_message(ws, message):
     close = candle['c']
 
     if is_closed:
-        print("candle closed at {}".format(close))
+        # print("Candle closed at {}".format(close))
         closes.append(float(close))
-        print("Num of closes so far: {}".format(len(closes)))
+        # print("Num of closes so far: {}".format(len(closes)))
 
         if len(closes) > RSI_PERIOD:
             np_closes = numpy.array(closes)
             rsi = talib.RSI(np_closes, RSI_PERIOD)
+            rsi = rsi[14:]
             print("All RSI values so far:")
             print(rsi)
             last_rsi = rsi[-1]
-            print("Current RSI is {}".format(last_rsi))
+            # print("Current RSI is {}".format(last_rsi))
 
             if last_rsi > RSI_OVERBOUGHT:
+                # print("RSI > overbought threshold")
+                
                 if in_position:
                     print("OVERBOUGHT SIGNAL: PLACE SELL ORDER")
                     # binance sell order
-                    order_success = order(TRADE_SYMBOL, SIDE_SELL, TRADE_QUANTITY)
-                    if order_succeeded:
+                    order_success = order(TRADE_SYMBOL, Client.SIDE_SELL, TRADE_QUANTITY, Client.ORDER_TYPE_MARKET)
+                    
+                    if order_success:
                         in_position = False
+                
                 else:
                     print("Overbought: Not in position. Nothing to do.")
+
             if last_rsi < RSI_OVERSOLD:
+                # print("RSI < oversold threshold")
+                
                 if in_position:
                     print("Oversold: Already in position. Nothing to do.")
+                
                 else:
                     print("OVERSOLD SIGNAL: PLACE BUY ORDER")
                     # binance buy order
-                    order_success = order(TRADE_SYMBOL, SIDE_BUY, TRADE_QUANTITY)
+                    order_success = order(TRADE_SYMBOL, Client.SIDE_BUY, TRADE_QUANTITY, Client.ORDER_TYPE_MARKET)
+                    
                     if order_success:
                         in_position = True
 
