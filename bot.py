@@ -1,18 +1,16 @@
+# Crypto trade bot
+# Specify configuration file with config.py
+# Ensure your API keys are kept secret!
+
 import websocket, json, pprint, talib, numpy
 import config
 from binance.client import Client
 from binance.enums import *
 
 
-SOCKET = "wss://stream.binance.com:9443/ws/ethusdt@kline_1m"
+SOCKET = "wss://stream.binance.com:9443/ws/{}@kline_{}".format(config.TRADE_SYMBOL,config.KLINE_INTERVAL)
 
 closes = []
-
-RSI_PERIOD = 14
-RSI_OVERBOUGHT = 70.0
-RSI_OVERSOLD = 30.0
-TRADE_SYMBOL = 'ETHUSD'
-TRADE_QUANTITY = 0.005
 
 in_position = False
 
@@ -52,7 +50,7 @@ def on_message(ws, message):
         closes.append(float(close))
         # print("Num of closes so far: {}".format(len(closes)))
 
-        if len(closes) > RSI_PERIOD:
+        if len(closes) > config.RSI_PERIOD:
             np_closes = numpy.array(closes)
             rsi = talib.RSI(np_closes, RSI_PERIOD)
             rsi = rsi[14:]
@@ -61,7 +59,7 @@ def on_message(ws, message):
             last_rsi = rsi[-1]
             # print("Current RSI is {}".format(last_rsi))
 
-            if last_rsi > RSI_OVERBOUGHT:
+            if last_rsi > config.RSI_OVERBOUGHT:
                 # print("RSI > overbought threshold")
                 
                 if in_position:
@@ -75,7 +73,7 @@ def on_message(ws, message):
                 else:
                     print("Overbought: Not in position. Nothing to do.")
 
-            if last_rsi < RSI_OVERSOLD:
+            if last_rsi < config.RSI_OVERSOLD:
                 # print("RSI < oversold threshold")
                 
                 if in_position:
@@ -94,37 +92,5 @@ def on_message(ws, message):
 ws = websocket.WebSocketApp(SOCKET, on_open=on_open, on_close=on_close, on_message=on_message)
 
 ws.run_forever(ping_interval=300)
-
-# Crypto trading bot
-
-# Get kline data from Binance streams
-    # look for end of candle, add to array of candles
-# apply technical indicator (rsi? macd? research further)
-# generate buy/sell signal
-# Send purchase or sell request to Binance broker
-
-# Things we want to track in a database:
-# Orders placed by bot
-    # Primary key OrderID - int
-    # Coin name - string
-    # Order type (BUY/SELL) - string
-    # Timestamp (utc?) - datetime/string
-    # Price - float
-    # Foreign key SignalID - int (reference to signal that produced this order)
-    # Foreign key BotID - int (reference to bot)
-# Signals produced by bot
-    # Primary key SignalID - int
-    # Coin name - string
-    # Indicator - string (which strategy? RSI/MACD/etc)
-    # Signal type - string (BUY/SELL)
-    # Signal threshold - float (value of indicator e.g. rsi=70.0)
-    # Timestamp (utc?) - datetime/string
-# Bots
-    # Primary key BotID - int
-    # Indicator - string (strategy of bot)
-    # Settings - research further into this
-    # Balance - float (bots current USD balance)
-    # Profit - float (tracks all time p/l of bot)
-
 
 
