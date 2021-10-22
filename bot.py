@@ -1,9 +1,10 @@
 # Crypto trade bot
-# Specify configuration file with config.py
+# Specify API keys in file config.py
 # Ensure your API keys are kept secret!
 
 import websocket, json, pprint, talib, numpy
-import config
+import sys
+import config, strategies
 from binance.client import Client
 from binance.enums import *
 
@@ -14,8 +15,28 @@ closes = []
 
 in_position = False
 
-
 client = Client(config.API_KEY, config.API_SECRET, tld='us')
+
+strategy = None
+
+# determine bot strategy
+n = len(sys.argv)
+if (n != 2):
+    print("Error: Wrong command line arguments provided.")
+    exit(1)
+else:
+    s = argv[1]
+    if s not in strategies.STRATEGY_LIST:
+        print("Error: Invalid strategy selected.")
+        exit(1)
+    if s == "RSI":
+        strategy = strategies.RSI_strategy()
+    elif s == "BBANDS":
+        strategy = strategies.BB_strategy()
+    else:
+        print("Error")
+        exit(1)
+
 
 def order(symbol, side, quantity, order_type=Client.ORDER_TYPE_MARKET):
     try:
@@ -37,7 +58,7 @@ def on_close(ws):
 
 def on_message(ws, message):
     global in_position # ensure function knows variable should be referenced globally
-    # print("message received")
+    print("message received")
     json_msg = json.loads(message)
     # pprint.pprint(json_msg)
 
@@ -50,20 +71,17 @@ def on_message(ws, message):
         closes.append(float(close))
         # print("Num of closes so far: {}".format(len(closes)))
 
-        if len(closes) > config.RSI_PERIOD:
-            np_closes = numpy.array(closes)
-            rsi = talib.RSI(np_closes, RSI_PERIOD)
-            rsi = rsi[14:]
-            print("All RSI values so far:")
-            print(rsi)
-            last_rsi = rsi[-1]
-            # print("Current RSI is {}".format(last_rsi))
+        if len(closes) > strategy_interval:
 
-            if last_rsi > config.RSI_OVERBOUGHT:
-                # print("RSI > overbought threshold")
+            np_closes = numpy.array(closes)
+
+            signal = strategies.generate_signal(strategy)
+
+            if signal == "SELL":
+                print("SELL SIGNAL RECEIVED")
                 
                 if in_position:
-                    print("OVERBOUGHT SIGNAL: PLACE SELL ORDER")
+                    print("PLACING SELL ORDER")
                     # binance sell order
                     order_success = order(TRADE_SYMBOL, Client.SIDE_SELL, TRADE_QUANTITY, Client.ORDER_TYPE_MARKET)
                     
@@ -71,22 +89,20 @@ def on_message(ws, message):
                         in_position = False
                 
                 else:
-                    print("Overbought: Not in position. Nothing to do.")
+                    print("Not in position. Nothing to do.")
 
-            if last_rsi < config.RSI_OVERSOLD:
-                # print("RSI < oversold threshold")
-                
+            elif signal == "BUY":
+                print("BUY SIGNAL RECEIVED")
                 if in_position:
-                    print("Oversold: Already in position. Nothing to do.")
+                    print("Already in position. Nothing to do.")
                 
                 else:
-                    print("OVERSOLD SIGNAL: PLACE BUY ORDER")
+                    print("PLACING BUY ORDER")
                     # binance buy order
                     order_success = order(TRADE_SYMBOL, Client.SIDE_BUY, TRADE_QUANTITY, Client.ORDER_TYPE_MARKET)
                     
                     if order_success:
                         in_position = True
-
 
 
 ws = websocket.WebSocketApp(SOCKET, on_open=on_open, on_close=on_close, on_message=on_message)

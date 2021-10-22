@@ -1,3 +1,6 @@
 config.py
+test.py
+ping.sh
 __pycache__/
+*.swp
 *.py[cod]
