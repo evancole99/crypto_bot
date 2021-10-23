@@ -9,7 +9,7 @@ from binance.client import Client
 from binance.enums import *
 
 
-SOCKET = "wss://stream.binance.com:9443/ws/{}@kline_{}".format(config.TRADE_SYMBOL,config.KLINE_INTERVAL)
+SOCKET = "wss://stream.binance.com:9443/ws/{}@kline_{}".format(strategies.TRADE_SYMBOL,strategies.KLINE_INTERVAL)
 
 closes = []
 
@@ -25,7 +25,7 @@ if (n != 2):
     print("Error: Wrong command line arguments provided.")
     exit(1)
 else:
-    s = argv[1]
+    s = sys.argv[1]
     if s not in strategies.STRATEGY_LIST:
         print("Error: Invalid strategy selected.")
         exit(1)
@@ -41,7 +41,7 @@ else:
 def order(symbol, side, quantity, order_type=Client.ORDER_TYPE_MARKET):
     try:
         print("Sending order")
-        # CREATE TEST ORDER
+        # CREATE ORDER
         order = client.create_order(symbol=symbol,side=side,type=order_type,quantity=quantity)
         print(order)
     except Exception as e:
