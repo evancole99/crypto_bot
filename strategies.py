@@ -7,8 +7,8 @@ import talib, numpy
 STRATEGY_LIST = ["RSI", "BBANDS"] # list of all currently implemented strategies
 
 # Bot configuration
-TRADE_SYMBOL = 'ethusdt'
-TRADE_QUANTITY = 0.005
+TRADE_SYMBOL = 'ETHUSDT'
+TRADE_QUANTITY = 0.01
 KLINE_INTERVAL = '3m'
 
 

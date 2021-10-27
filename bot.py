@@ -8,8 +8,9 @@ import config, strategies
 from binance.client import Client
 from binance.enums import *
 
+symbol_lower = strategies.TRADE_SYMBOL.lower()
 
-SOCKET = "wss://stream.binance.com:9443/ws/{}@kline_{}".format(strategies.TRADE_SYMBOL,strategies.KLINE_INTERVAL)
+SOCKET = "wss://stream.binance.com:9443/ws/{}@kline_{}".format(symbol_lower,strategies.KLINE_INTERVAL)
 
 closes = []
 
