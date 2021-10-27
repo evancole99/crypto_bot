@@ -9,7 +9,7 @@ STRATEGY_LIST = ["RSI", "BBANDS"] # list of all currently implemented strategies
 # Bot configuration
 TRADE_SYMBOL = 'ETHUSDT'
 TRADE_QUANTITY = 0.01
-KLINE_INTERVAL = '3m'
+KLINE_INTERVAL = '1m'
 
 
 # RSI config

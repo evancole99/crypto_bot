@@ -9,6 +9,7 @@ import config, strategies
 from binance.client import Client
 from binance.enums import *
 
+# All symbols for Binance webstreams are lowercase
 symbol_lower = strategies.TRADE_SYMBOL.lower()
 
 SOCKET = "wss://stream.binance.com:9443/ws/{}@kline_{}".format(symbol_lower,strategies.KLINE_INTERVAL)
@@ -111,7 +112,9 @@ def on_message(ws, message):
                     if order_success:
                         in_position = True
 
-websocket.enableTrace(True)
+
+# Uncomment this line to view verbose connection information
+# websocket.enableTrace(True)
 
 ws = websocket.WebSocketApp(SOCKET, on_open=on_open, on_close=on_close, on_message=on_message)
 
