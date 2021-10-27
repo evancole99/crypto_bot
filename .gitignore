@@ -1,6 +1,14 @@
+<<<<<<< HEAD
 config.py
 test.py
 ping.sh
 __pycache__/
 *.swp
 *.py[cod]
+=======
+__pycache__/
+test.py
+config.py
+*.swp
+*.sh
+>>>>>>> 1268adf91165d2538096e0c5d3e14411fb1479c2
