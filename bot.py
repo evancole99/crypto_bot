@@ -15,6 +15,8 @@ symbol_lower = strategies.TRADE_SYMBOL.lower()
 SOCKET = "wss://stream.binance.com:9443/ws/{}@kline_{}".format(symbol_lower,strategies.KLINE_INTERVAL)
 
 closes = []
+highs = []
+lows = []
 
 in_position = False
 
@@ -33,11 +35,15 @@ else:
         print("Error: Invalid strategy selected.")
         exit(1)
     if s == "RSI":
-        strategy = strategies.RSI_strategy()
+        strategy = strategies.RSI()
 
     elif s == "BBANDS":
         print("Bollinger Bands strategy selected")
-        strategy = strategies.BB_strategy()
+        strategy = strategies.BBANDS()
+
+    elif s == "BBANDS_REVERSION":
+        print("Bollinger Bands Reversion strategy selected")
+        strategy = strategies.BBANDS_REVERSION()
 
     else:
         print("Error")
@@ -73,15 +79,19 @@ def on_message(ws, message):
     candle = json_msg['k']
     is_closed = candle['x']
     close = candle['c']
+    high = candle['h']
+    low = candle['l']
 
     if is_closed:
         # print("Candle closed at {}".format(close))
         closes.append(float(close))
+        highs.append(float(high))
+        lows.append(float(low))
         # print("Num of closes so far: {}".format(len(closes)))
 
         if len(closes) > strategy_interval:
             np_closes = numpy.array(closes)
-            signal = strategy.signal(np_closes)
+            signal = strategy.signal(np_closes, highs, lows)
 
             if signal == "SELL":
                 print("SELL SIGNAL RECEIVED")
