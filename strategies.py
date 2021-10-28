@@ -17,7 +17,6 @@ TRADE_QUANTITY = 0.01
 KLINE_INTERVAL = '5m'
 
 
-# RSI config
 
 class RSI:
 
@@ -46,7 +45,6 @@ class RSI:
         else:
             return None
 
-# Bollinger Bands config
 
 class BBANDS:
     
