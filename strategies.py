@@ -12,9 +12,10 @@ import talib, numpy
 STRATEGY_LIST = ["RSI", "BBANDS", "BBANDS_REVERSION"]
 
 # Bot configuration
-TRADE_SYMBOL = 'ETHUSDT'
-TRADE_QUANTITY = 0.01
-KLINE_INTERVAL = '5m'
+TRADE_SYMBOL = 'ETHUSDT' # trade symbol (MAKE SURE IT IS SPELLED EXACTLY CORRECT)
+TRADE_QUANTITY = 0.01 # quantity of asset per trade
+POSITIONS_ALLOWED = 1 # number of open positions bot may have at once
+KLINE_INTERVAL = '5m' # candlestick interval to trade on
 
 
 
