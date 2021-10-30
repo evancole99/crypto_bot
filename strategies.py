@@ -67,8 +67,8 @@ class BBANDS:
         lower = lower[-1]
         arrLen = len(closes)
         currPrice = closes[arrLen-1]
-        print("Current BBands: UPPER {}, MIDDLE {}, LOWER {}".format(upper, middle, lower))
-        print("Current close: {}".format(currPrice))
+        # print("Current BBands: UPPER {}, MIDDLE {}, LOWER {}".format(upper, middle, lower))
+        # print("Current close: {}".format(currPrice))
         if currPrice < lower:
             return "BUY"
         elif currPrice > upper:
@@ -111,8 +111,8 @@ class BBANDS_REVERSION:
         low = lows[-1]
         high = highs[-1]
 
-        print("Upper: {} Middle: {} Lower: {}".format(upper, middle, lower))
-        print("Current RSI: {}".format(last_rsi))
+        # print("Upper: {} Middle: {} Lower: {}".format(upper, middle, lower))
+        # print("Current RSI: {}".format(last_rsi))
 
         if low <= lower and currPrice > lower:
             

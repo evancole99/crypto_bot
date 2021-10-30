@@ -3,7 +3,7 @@
 # Strategies can be customized in strategies.py
 # Ensure your API keys are kept secret!
 
-import websocket, json, pprint, talib, numpy, time
+import websocket, json, requests, talib, numpy, time
 import sys
 import config, strategies
 from binance.client import Client
@@ -13,7 +13,6 @@ from binance.enums import *
 symbol_lower = strategies.TRADE_SYMBOL.lower()
 
 SOCKET = "wss://stream.binance.com:9443/ws/{}@kline_{}".format(symbol_lower,strategies.KLINE_INTERVAL)
-logfile = "log.txt"
 
 closes = []
 highs = []
@@ -51,7 +50,20 @@ else:
         exit(1)
 
 strategy_interval = strategy.get_interval()
-print("Interval: {}".format(strategy_interval))
+# print("Interval: {}".format(strategy_interval))
+
+def notify_user(order_type, symbol, price, qty):
+    report = {}
+    report["order_type"] = order_type
+    report["symbol"] = symbol
+    report["price"] = price
+    report["qty"] = qty
+    response = requests.post(config.IFTTT_WEBHOOK, json=report, headers={'Content-Type': 'application/json'})
+    
+    if response.status_code != 200:
+        raise ValueError(
+                'Request to IFTTT webhook returned error %s.\nThe response:\n%s' % (response.status_code, response.text)
+                )
 
 def order(symbol, side, quantity, order_type=Client.ORDER_TYPE_MARKET):
     global open_positions
@@ -70,14 +82,8 @@ def order(symbol, side, quantity, order_type=Client.ORDER_TYPE_MARKET):
             open_positions.append(float(price))
         elif side == Client.SIDE_SELL:
             entry = open_positions.pop(len(open_positions) - 1)
-            profit = (price * quantity) - (entry * quantity)
-            print("Trade executed for profit of {}".format(profit))
-            f = open(logfile, "a")
-            # write to log file: bot type, timestamp, profit
-            writestr = "{} {} {}".format(s, time.time(), profit)
-            f.write(writestr)
-            f.close()
-
+        # Send notification
+        notify_user(side, symbol, price, quantity)
 
     except Exception as e:
         print("Order error: Exception occurred.")
@@ -95,7 +101,6 @@ def on_message(ws, message):
     global open_positions
     # print("message received")
     json_msg = json.loads(message)
-    # pprint.pprint(json_msg)
 
     candle = json_msg['k']
     is_closed = candle['x']
@@ -109,7 +114,7 @@ def on_message(ws, message):
         closes.append(float(close))
         highs.append(float(high))
         lows.append(float(low))
-        print("Num of closes so far: {}".format(len(closes)))
+        # print("Num of closes so far: {}".format(len(closes)))
 
         if len(closes) > strategy_interval: 
 
