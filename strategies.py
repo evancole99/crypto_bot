@@ -14,8 +14,8 @@ STRATEGY_LIST = ["RSI", "BBANDS", "BBANDS_REVERSION"]
 # Bot configuration
 TRADE_SYMBOL = 'ETHUSDT' # trade symbol (MAKE SURE IT IS SPELLED EXACTLY CORRECT)
 TRADE_QUANTITY = 0.01 # quantity of asset per trade
-POSITIONS_ALLOWED = 1 # number of open positions bot may have at once
-KLINE_INTERVAL = '5m' # candlestick interval to trade on
+POSITIONS_ALLOWED = 2 # number of open positions bot may have at once
+KLINE_INTERVAL = '3m' # candlestick interval to trade on
 
 
 
@@ -85,7 +85,7 @@ class BBANDS_REVERSION:
     # EMA, if the price reaches its set upper or lower bounds and is within
     # an acceptable RSI range, the strategy will return buy or sell signals.
     
-    def __init__(self, BBANDS_PERIOD=12, STDEVUP=2, STDEVDN=2, RSI_OVERBOUGHT=60.0, RSI_OVERSOLD=40.0):
+    def __init__(self, BBANDS_PERIOD=12, STDEVUP=2, STDEVDN=2, RSI_OVERBOUGHT=70.0, RSI_OVERSOLD=30.0):
         self.BBANDS_PERIOD = BBANDS_PERIOD
         # number of standard deviations from mean
         self.STDEVUP = STDEVUP

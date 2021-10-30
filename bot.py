@@ -54,18 +54,20 @@ strategy_interval = strategy.get_interval()
 print("Interval: {}".format(strategy_interval))
 
 def order(symbol, side, quantity, order_type=Client.ORDER_TYPE_MARKET):
+    global open_positions
+
     try:
         print("Sending order")
         # CREATE ORDER
         order = client.create_order(symbol=symbol,side=side,type=order_type,quantity=quantity)
 
-        json_msg = json.loads(order)
-        pprint.pprint(json_msg)
-        filled = json_msg['fills']
+        decoded = order.read().decode('UTF-8')
+        order_data = json.loads(decoded)
+        filled = order_data['fills']
         price = filled['price']
 
         if side == Client.SIDE_BUY:
-            open_positions.append(price)
+            open_positions.append(float(price))
         elif side == Client.SIDE_SELL:
             entry = open_positions.pop(len(open_positions) - 1)
             profit = (price * quantity) - (entry * quantity)
@@ -90,7 +92,7 @@ def on_close(ws):
     print("connection closed")
 
 def on_message(ws, message):
-    global in_position # ensure function knows variable should be referenced globally
+    global open_positions
     # print("message received")
     json_msg = json.loads(message)
     # pprint.pprint(json_msg)
@@ -103,19 +105,13 @@ def on_message(ws, message):
 
     if is_closed:
 
-        # print("Candle closed at {}".format(close))
+        print("Candle closed at {}".format(close))
         closes.append(float(close))
         highs.append(float(high))
         lows.append(float(low))
-        # print("Num of closes so far: {}".format(len(closes)))
+        print("Num of closes so far: {}".format(len(closes)))
 
-        if len(closes) >= strategy_interval:
-
-            # Keep only the necessary number of closes to calculate our indicators
-            # I believe the lists becoming too long was causing the script to quit prematurely
-            closes = closes[-strategy_interval:]
-            highs = highs[-strategy_interval:]
-            lows = lows[-strategy_interval:]
+        if len(closes) > strategy_interval: 
 
             np_closes = numpy.array(closes)
             signal = strategy.signal(np_closes, highs, lows)
@@ -124,22 +120,26 @@ def on_message(ws, message):
                 print("SELL SIGNAL RECEIVED")
                 
                 if open_positions:
-                    for i in open_positions:
-                        print("PLACING SELL ORDER")
-                        # binance sell order
-                        # subtract binance's 0.1% spot trading fee
-                        commission = strategies.TRADE_QUANTITY * 0.001
-                        order_success = order(strategies.TRADE_SYMBOL, Client.SIDE_SELL, strategies.TRADE_QUANTITY - commission, Client.ORDER_TYPE_MARKET)
-                        
-                        if order_success:
-                            print("ORDER SUCCESS")
+
+                    # Sell all open positions 
+                    print("PLACING SELL ORDER")
+
+                    # binance sell order
+                    # subtract binance's 0.1% spot trading fee
+                    commission = strategies.TRADE_QUANTITY * 0.001
+                    sellQty = (strategies.TRADE_QUANTITY - commission) * len(open_positions)
+                    order_success = order(strategies.TRADE_SYMBOL, Client.SIDE_SELL, sellQty, Client.ORDER_TYPE_MARKET)
+                    
+                    if order_success:
+                        print("ORDER SUCCESS")
                 
                 else:
                     print("Not in position. Nothing to do.")
 
             elif signal == "BUY":
                 print("BUY SIGNAL RECEIVED")
-                if len(open_positions) > strategies.POSITIONS_ALLOWED:
+
+                if len(open_positions) >= strategies.POSITIONS_ALLOWED:
                     print("Already in position. Nothing to do.")
                 
                 else:
