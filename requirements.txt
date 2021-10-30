@@ -2,3 +2,4 @@ websocket-client
 numpy
 TA-Lib
 python-binance
+requests
