@@ -62,8 +62,7 @@ def notify_user(order_type, symbol, price, qty):
     
     if response.status_code != 200:
         raise ValueError(
-                'Request to IFTTT webhook returned error %s.\nThe response:\n%s' % (response.status_code, response.text)
-                )
+                'Request to IFTTT webhook returned error %s.\nThe response:\n%s' % (response.status_code, response.text))
 
 def order(symbol, side, quantity, order_type=Client.ORDER_TYPE_MARKET):
     global open_positions
@@ -71,17 +70,16 @@ def order(symbol, side, quantity, order_type=Client.ORDER_TYPE_MARKET):
     try:
         print("Sending order")
         # CREATE ORDER
-        order = client.create_order(symbol=symbol,side=side,type=order_type,quantity=quantity)
+        order_data = client.create_order(symbol=symbol,side=side,type=order_type,quantity=quantity)
 
-        decoded = order.read().decode('UTF-8')
-        order_data = json.loads(decoded)
         filled = order_data['fills']
-        price = filled['price']
-
+        price = filled[0]['price']
+        
         if side == Client.SIDE_BUY:
             open_positions.append(float(price))
         elif side == Client.SIDE_SELL:
             entry = open_positions.pop(len(open_positions) - 1)
+
         # Send notification
         notify_user(side, symbol, price, quantity)
 
