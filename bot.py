@@ -9,6 +9,10 @@ import config, strategies
 from binance.client import Client
 from binance.enums import *
 
+# TODO:
+# Ensure bot CONVERTS ALL HOLDINGS TO USDT when termination signal is given
+
+
 # All symbols for Binance webstreams are lowercase
 symbol_lower = strategies.TRADE_SYMBOL.lower()
 
@@ -25,29 +29,34 @@ client = Client(config.API_KEY, config.API_SECRET, tld='us')
 strategy = None
 
 # determine bot strategy
+
 n = len(sys.argv)
-if (n != 2):
-    print("Error: Wrong command line arguments provided.")
+s = sys.argv[1]
+
+params = []
+for x in range(2, n):
+    val = sys.argv[x]
+    if (float(val) != 0):
+        params.append(float(val))
+
+
+if s not in strategies.STRATEGY_LIST:
+    print("Error: Invalid strategy selected.")
     exit(1)
+if s == "RSI":
+    strategy = strategies.RSI(*params)
+
+elif s == "BBANDS":
+    print("Bollinger Bands strategy selected")
+    strategy = strategies.BBANDS(*params)
+
+elif s == "BBANDS_REVERSION":
+    print("Bollinger Bands Reversion strategy selected")
+    strategy = strategies.BBANDS_REVERSION(*params)
+
 else:
-    s = sys.argv[1]
-    if s not in strategies.STRATEGY_LIST:
-        print("Error: Invalid strategy selected.")
-        exit(1)
-    if s == "RSI":
-        strategy = strategies.RSI()
-
-    elif s == "BBANDS":
-        print("Bollinger Bands strategy selected")
-        strategy = strategies.BBANDS()
-
-    elif s == "BBANDS_REVERSION":
-        print("Bollinger Bands Reversion strategy selected")
-        strategy = strategies.BBANDS_REVERSION()
-
-    else:
-        print("Error")
-        exit(1)
+    print("Error")
+    exit(1)
 
 strategy_interval = strategy.get_interval()
 # print("Interval: {}".format(strategy_interval))
