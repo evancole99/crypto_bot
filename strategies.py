@@ -37,7 +37,7 @@ class RSI:
         rsi = talib.RSI(closes, self.RSI_PERIOD)
         # print(rsi)
         last_rsi = rsi[-1]
-        print("Current RSI is {}".format(last_rsi))
+        #print("Current RSI is {}".format(last_rsi))
 
         if last_rsi > self.RSI_OVERBOUGHT:
             return "SELL"
@@ -116,26 +116,26 @@ class BBANDS_REVERSION:
 
         if low <= lower and currPrice > lower:
             
-            print("Bollinger buy condition ACCEPTED")
+            #print("Bollinger buy condition ACCEPTED")
             if last_rsi < self.RSI_OVERSOLD:
                 # buy signal
-                print("RSI buy condition ACCEPTED")
+                #print("RSI buy condition ACCEPTED")
                 return "BUY"
 
             else:
-                print("RSI buy condition FAILED - not executing buy.")
+                #print("RSI buy condition FAILED - not executing buy.")
                 return None
         
         elif high >= upper and currPrice < upper:
 
-            print("Bollinger sell condition ACCEPTED")
+            #print("Bollinger sell condition ACCEPTED")
             if last_rsi > self.RSI_OVERBOUGHT:
                 # sell signal
-                print("RSI sell condition ACCEPTED")
+                #print("RSI sell condition ACCEPTED")
                 return "SELL"
 
             else:
-                print("RSI sell condition FAILED - not executing sell.")
+                #print("RSI sell condition FAILED - not executing sell.")
                 return None
 
         else:
