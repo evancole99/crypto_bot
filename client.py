@@ -1,4 +1,5 @@
 import requests, sys, json
+import aiohttp, asyncio
 import config, strategies
 
 # CLIENT SIDE SCRIPT
@@ -11,68 +12,74 @@ import config, strategies
     # Types: RSI, BBANDS, BBANDS_REVERSION
 # Close current bot
 
-print("Options:")
-print("1 to open new bot")
-print("2 to close existing bot")
-choice = input("Enter your choice (1 or 2): ")
 
-params = {}
+async def main():
+    async with aiohttp.ClientSession() as session:
+        print("Options:")
+        print("1 to open new bot")
+        print("2 to close existing bot")
+        choice = input("Enter your choice (1 or 2): ")
 
-if choice == "1":
-    print("OPENING BOT")
-    
-    print("Options:")
-    print(strategies.STRATEGY_LIST)
-    bot_type = input("Select a bot type (exactly as shown above): ")
+        params = {}
 
-    print("\nConfigure your bot")
-    print("Enter a value for each following field, or enter 0 for default")
-    if bot_type == "RSI":
-        rsi_period = int(input("RSI period: "))
-        rsi_oversold = float(input("RSI oversold: "))
-        rsi_overbought = float(input("RSI overbought: "))
+        if choice == "1":
+            print("OPENING BOT")
+            
+            print("Options:")
+            print(strategies.STRATEGY_LIST)
+            bot_type = input("Select a bot type (exactly as shown above): ")
 
-        params = {
-                'type': bot_type,
-                'period': rsi_period,
-                'rsi_oversold': rsi_oversold,
-                'rsi_overbought': rsi_overbought
-                }
-    elif bot_type == "BBANDS":
-        bbands_period = int(input("Bollinger Bands period: "))
+            print("\nConfigure your bot")
+            print("Enter a value for each following field, or enter 0 for default")
+            if bot_type == "RSI":
+                rsi_period = int(input("RSI period: "))
+                rsi_oversold = float(input("RSI oversold: "))
+                rsi_overbought = float(input("RSI overbought: "))
 
-        params = {
-                'type': bot_type,
-                'period': bbands_period
-                }
-    elif bot_type == "BBANDS_REVERSION":
-        bbands_period = int(input("Bollinger Bands period: "))
-        stdevup = int(input("Standard deviations above: "))
-        stdevdn = int(input("Standard deviations below: "))
-        rsi_oversold = float(input("RSI oversold: "))
-        rsi_overbought = float(input("RSI overbought: "))
+                params = {
+                        'type': bot_type,
+                        'period': rsi_period,
+                        'rsi_oversold': rsi_oversold,
+                        'rsi_overbought': rsi_overbought
+                        }
+            elif bot_type == "BBANDS":
+                bbands_period = int(input("Bollinger Bands period: "))
 
-        params = {
-                'type': bot_type,
-                'period': bbands_period,
-                'stdevup': stdevup,
-                'stdevdn': stdevdn,
-                'rsi_oversold': rsi_oversold,
-                'rsi_overbought': rsi_overbought
-                }
-    else:
-        print("Error: Wrong bot type selected")
-        exit(1)
+                params = {
+                        'type': bot_type,
+                        'period': bbands_period
+                        }
+            elif bot_type == "BBANDS_REVERSION":
+                bbands_period = int(input("Bollinger Bands period: "))
+                stdevup = int(input("Standard deviations above: "))
+                stdevdn = int(input("Standard deviations below: "))
+                rsi_oversold = float(input("RSI oversold: "))
+                rsi_overbought = float(input("RSI overbought: "))
 
-elif choice == "2":
-    print("CLOSING BOT")
-    params = {'type': 'CLOSE'}
+                params = {
+                        'type': bot_type,
+                        'period': bbands_period,
+                        'stdevup': stdevup,
+                        'stdevdn': stdevdn,
+                        'rsi_oversold': rsi_oversold,
+                        'rsi_overbought': rsi_overbought
+                        }
+            else:
+                print("Error: Wrong bot type selected")
+                exit(1)
 
-else:
-    print("Error: Invalid choice")
-    exit(1)
+        elif choice == "2":
+            print("CLOSING BOT")
+            params = {'type': 'CLOSE'}
 
-r = requests.post(config.SERVER_ADDR, params=params)
+        else:
+            print("Error: Invalid choice")
+            exit(1)
+            
+        async with session.post(config.SERVER_ADDR, params=params) as r:
+            #r = requests.post(config.SERVER_ADDR, params=params)
+            #r = requests.post('http://localhost:8080', params=params)
+            print(await r.text())
 
-#r = requests.post('http://localhost:5000', params=params)
-
+loop = asyncio.get_event_loop()
+loop.run_until_complete(main())

@@ -3,4 +3,4 @@ numpy
 TA-Lib
 python-binance
 requests
-flask
+aiohttp

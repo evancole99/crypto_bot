@@ -1,12 +1,10 @@
-import os
+import os, socket
 import subprocess as sp
-from flask import Flask, request
+from aiohttp import web
 
-app = Flask(__name__)
 
-@app.route('/', methods=['POST'])
 
-def receive():
+async def handle(request):
 
     params = ['python3', 'bot.py']
     bot_type = request.args.get('type')
@@ -28,10 +26,14 @@ def receive():
         result = "BOT CLOSED"
 
     return result
-    
+
+async def init() -> web.Application:
+    app = web.Application()
+    app.add_routes([web.get('/', handle)])
+    return app
 
 if __name__ == "__main__":
-    app.run()
+    web.run_app(init())
 
     
 
