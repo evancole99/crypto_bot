@@ -33,6 +33,7 @@ strategy = None
 n = len(sys.argv)
 s = sys.argv[1]
 
+# initialize full list of parameters from command line args
 params = []
 for x in range(2, n):
     val = sys.argv[x]
