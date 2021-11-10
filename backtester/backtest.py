@@ -1,12 +1,7 @@
 import numpy
-# Parameter "strategy" must be a class containing the following functions:
-# get_interval():
-#       returns an integer value corresponding to the strategy's period
-# signal(closes, highs, lows):
-#       takes list of closes, optional list of highs and lows (may void the parameter) and returns one of the following signals as a STRING:
-#       BUY AMT, SELL AMT, LONG AMT (todo), SHORT AMT (todo)
 
 
+# Parameter "strategy" must be a class containing the methods as defined in the README
 
 
 def backtest(strategy, amtPerTrade, numPositionsAllowed, closes, highs, lows):
