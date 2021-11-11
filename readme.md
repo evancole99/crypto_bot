@@ -46,9 +46,11 @@ To start the bot manually, simply execute the Python script with the following s
 python3 bot.py <STRATEGY> <PARAM1> <PARAM2> <...>
 ```
 
+The parameters differ depending on the selected strategy. See strategies.py for clarification.  
+
 ### Run bot through AIOHTTP server
 
-If you do not wish to run the bot manually, you may optionally decide to configure an AIOHTTP server running in the cloud. The AIOHTTP server is pre-configured in server.py. To run it, ensure your ports are open to the necessary HTTP traffic, and simply execute the Python script to begin the web server.
+If you do not wish to run the bot manually, you may optionally decide to configure an AIOHTTP server. The AIOHTTP server is pre-configured in server.py. To run it, ensure your ports are open to the necessary HTTP traffic (default is port 8080), and simply execute the Python script to begin the web server.
 
 To communicate with the AIOHTTP server, you can run the client.py file, which gives several basic commands to send to the server via HTTP POST. Ensure that config.py contains the correct server address for the web server.
 
