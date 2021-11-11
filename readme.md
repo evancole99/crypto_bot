@@ -9,6 +9,21 @@ To install the requires dependencies and libraries, the requirements can be foun
 
 In order for TALib to function properly, the prerequisite C library must be built and installed. See [how to install TALib dependencies](mrjbq7.github.io/ta-lib/install.html) for help.
 
+## Setting Up
+
+In order for the bot to be able to execute trades, a configuration file is needed containing our API keys, webhooks, server addresses, and anything else that we want to ensure is not hard-coded (keep your API keys safe!).  
+
+If you do not have Binance API keys configured, see [Binance's FAQ](http://binance.com/en/support/faq/360002502072) for help.
+
+To do this, create a file config.py with the following variables:
+* API\_KEY = 'YOUR API KEY'
+* API\_SECRET = 'YOUR API SECRET'
+* IFTTT\_WEBHOOK = 'YOUR IFTTT PUSH NOTIFY WEBHOOK'
+* SERVER\_ADDR = "YOUR AIOHTTP SERVER ADDRESS"  
+
+If you wish to be notified via push notifications through IFTTT, sign up for IFTTT Maker and create a push notify applet using WebHooks. You may configure the applet to provide a basic notification, or to provide more data using a JSON payload. If you don't wish to use IFTTT notifications, simply remove all references to the notify\_user() function.  
+
+And that's it! Make sure this file stays safe - anyone who has access to your API key and API secret has access to your Binance account.
 
 ## Configuring/Creating Strategies
 
