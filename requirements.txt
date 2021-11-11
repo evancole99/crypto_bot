@@ -4,4 +4,4 @@ TA-Lib
 python-binance
 requests
 aiohttp
-dateutil
+python-dateutil
