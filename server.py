@@ -1,40 +1,42 @@
-import os, socket
+import signal
 import subprocess as sp
 from aiohttp import web
 
 
 
+class BotProc(object):
+    @classmethod
+    def start(self, params):
+        self.process = sp.Popen(params)
+    @classmethod
+    def stop(self):
+        status = sp.Popen.poll(self.process)
+        if status == None:
+            self.process.send_signal(signal.SIGTERM)
+
 async def handle(request):
 
     params = ['python3', 'bot.py']
-    bot_type = request.args.get('type')
-    botProc = None
-    result = ""
-
-    for key, val in request.args.items():
+    bot_type = request.rel_url.query['type']
+    
+    for key, val in request.rel_url.query.items():
         params.append(val)
 
     if bot_type != "CLOSE":
         print("Starting bot process...")
-        botProc = sp.Popen(params)
-        status = sp.Popen.poll(botProc)
-        print(status)
-        result = "BOT OPENED"
+        BotProc.start(params)
+        return web.Response(text="BOT OPENED")
     else:
         print("Killing process...")
-        os.killpg(os.getpgid(pro.pid), signal.SIGTERM)
-        result = "BOT CLOSED"
+        BotProc.stop()
+        signal.raise_signal(signal.SIGTERM)
+        return web.Response(text="BOT CLOSED")
 
-    return result
-
-async def init() -> web.Application:
-    app = web.Application()
-    app.add_routes([web.get('/', handle)])
-    return app
+app = web.Application()
+app.add_routes([web.post('/', handle)])
 
 if __name__ == "__main__":
-    web.run_app(init())
+    web.run_app(app)
 
     
-
 
