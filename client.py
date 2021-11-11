@@ -13,6 +13,10 @@ import config, strategies
 # Close current bot
 
 
+async def post(session, p):
+    async with session.post(config.SERVER_ADDR, params=p) as r:
+        return await r.text()
+
 async def main():
     async with aiohttp.ClientSession() as session:
         print("Options:")
@@ -75,11 +79,9 @@ async def main():
         else:
             print("Error: Invalid choice")
             exit(1)
-            
-        async with session.post(config.SERVER_ADDR, params=params) as r:
-            #r = requests.post(config.SERVER_ADDR, params=params)
-            #r = requests.post('http://localhost:8080', params=params)
-            print(await r.text())
+
+        result = await post(session, params)
+        print(result)
 
 loop = asyncio.get_event_loop()
 loop.run_until_complete(main())
