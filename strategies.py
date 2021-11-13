@@ -9,7 +9,7 @@ import talib, numpy
 # == STRATEGIES ==
 # List of all currently implemented strategies
 # Ensure they are entered EXACTLY as shown as command line arguments
-STRATEGY_LIST = ["RSI", "BBANDS", "BBANDS_REVERSION", "MA_CROSSOVER"]
+STRATEGY_LIST = ["RSI", "BBANDS", "BBANDS_REVERSION", "MA_CROSSOVER", "STOCH"]
 
 # Bot configuration
 TRADE_SYMBOL = 'ETHUSDT' # trade symbol (MAKE SURE IT IS SPELLED EXACTLY CORRECT)
@@ -192,5 +192,31 @@ class MA_CROSSOVER():
                 return "SELL"
         return None
         
+
+
+class STOCH():
+
+    def __init__(self, STOCH_OVERBOUGHT=80.0, STOCH_OVERSOLD=20.0, FASTK_PRD=5, SLOWK_PRD=14, SLOWD_PRD=3, MATYPE="MA"):
+        self.STOCH_OVERBOUGHT = STOCH_OVERBOUGHT
+        self.STOCH_OVERSOLD = STOCH_OVERSOLD
+        self.FASTK_PRD = FASTK_PRD
+        self.SLOWK_PRD = SLOWK_PRD
+        self.SLOWD_PRD = SLOWD_PRD
+        self.MATYPE = MATYPE
+
+    def get_interval(self):
+        return max([self.FASTK_PRD, self.SLOWK_PRD, self.SLOWD_PRD])
+
+    def signal(self, closes, highs, lows):
+
+        MA_TYPE = matypes.get(self.MATYPE, 0)
+
+        slowk, slowd = talib.STOCH(highs, lows, closes, fastk_period=self.FASTK_PRD, slowk_period=self.SLOWK_PRD, slowd_period=self.SLOWD_PRD, slowk_matype=MA_TYPE, slowd_matype=MA_TYPE)
+
+        if slowk[-1] < self.STOCH_OVERSOLD and slowd[-1] < self.STOCH_OVERSOLD:
+            return "BUY"
+        elif slowk[-1] > self.STOCH_OVERBOUGHT and slowd[-1] > self.STOCH_OVERBOUGHT:
+            return "SELL"
+
 
 
