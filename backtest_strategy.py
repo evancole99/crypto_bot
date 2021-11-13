@@ -8,13 +8,13 @@ import strategies # Import strategy script
 
 # Configure settings to backtest
 symbol = "ETHUSDT"
-interval = "1h"
-numCandles = 672
+interval = "1d"
+numCandles = 365
 amtPerTrade = 0.01
 numPositionsAllowed = 1
 
 # Initialize strategy to backtest
-strategy = strategies.BBANDS_REVERSION()
+strategy = strategies.MA_CROSSOVER()
 
 
 # Retrieve kline data from getdata script

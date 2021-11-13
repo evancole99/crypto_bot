@@ -9,15 +9,26 @@ import talib, numpy
 # == STRATEGIES ==
 # List of all currently implemented strategies
 # Ensure they are entered EXACTLY as shown as command line arguments
-STRATEGY_LIST = ["RSI", "BBANDS", "BBANDS_REVERSION"]
+STRATEGY_LIST = ["RSI", "BBANDS", "BBANDS_REVERSION", "MA_CROSSOVER"]
 
 # Bot configuration
 TRADE_SYMBOL = 'ETHUSDT' # trade symbol (MAKE SURE IT IS SPELLED EXACTLY CORRECT)
 TRADE_QUANTITY = 0.01 # quantity of asset per trade
 POSITIONS_ALLOWED = 2 # number of open positions bot may have at once
-KLINE_INTERVAL = '3m' # candlestick interval to trade on
+KLINE_INTERVAL = '1h' # candlestick interval to trade on
 
-
+matypes = {
+            'MA': 0, # moving average
+            'EMA': talib.MA_Type.EMA, # exponential moving average
+            'SMA': talib.MA_Type.SMA, # simple moving average
+            'DEMA': talib.MA_Type.DEMA, # double exponential moving average
+            'KAMA': talib.MA_Type.KAMA, # kaufman adaptive moving average
+            'MAMA': talib.MA_Type.MAMA, # mesa adaptive moving average
+            'T3': talib.MA_Type.T3, # triple exponential moving average (T3)
+            'TEMA': talib.MA_Type.TEMA, # triple exponential moving average
+            'TRIMA': talib.MA_Type.TRIMA, # triangular moving average
+            'WMA': talib.MA_Type.WMA # weighted moving average
+            }
 
 class RSI:
 
@@ -140,3 +151,46 @@ class BBANDS_REVERSION:
 
         else:
             return None
+
+
+class MA_CROSSOVER():
+
+    # Moving Average crossover strategy
+    # This strategy attempts to profit from using short-term moving average
+    # timeframes as crossover indicators.
+    # When the short MA crosses from below the long MA, a buy signal is generated.
+    # When the short MA crosses from above the long MA, a sell signal is generated.
+  
+
+    def __init__(self, MA_PERIOD_SHORT=5, MA_PERIOD_LONG=9, MATYPE="MA"):
+        self.MA_PERIOD_SHORT = MA_PERIOD_SHORT
+        self.MA_PERIOD_LONG = MA_PERIOD_LONG
+        self.MATYPE = MATYPE
+
+    def get_interval(self):
+        return self.MA_PERIOD_LONG
+
+    def signal(self, closes, *_):
+    
+        MA_TYPE = matypes.get(self.MATYPE, 0)
+        
+        MAShort = talib.MA(closes, timeperiod=self.MA_PERIOD_SHORT, matype=MA_TYPE)
+        MALong = talib.MA(closes, timeperiod=self.MA_PERIOD_LONG, matype=MA_TYPE)
+
+        prevMAShort = MAShort[-2]
+        prevMALong = MALong[-2]
+        currMAShort = MAShort[-1]
+        currMALong = MALong[-1]
+
+        if prevMAShort < prevMALong:
+            if currMAShort >= currMALong:
+                # BULLISH CROSSOVER
+                return "BUY"
+        elif prevMAShort > prevMALong:
+            if currMAShort <= currMALong:
+                # BEARISH CROSSOVER
+                return "SELL"
+        return None
+        
+
+
