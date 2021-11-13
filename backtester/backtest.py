@@ -56,21 +56,28 @@ def backtest(strategy, amtPerTrade, numPositionsAllowed, closes, highs, lows):
         print("No trades executed in given timeline.")
         return 0
     if (len(positions)) > 0:
-        print("Not all positions were closed.")
-        print("Closing remaining positions at last closing value and calculating profits...")
+        #print("Not all positions were closed.")
+        #print("Remaining positions: ")
+        #print(positions)
+        #print("\nClosing remaining positions at last closing value and calculating profits...")
 
         totAmt = sum(amt for entry, amt in positions)
         exits.append((closes[-1], totAmt))
         positions = []
+    
 
-    totalSpent = sum(x for x, amt in entries)
-    totalReturned = sum(x for x, amt in exits)
+
+    totalSpent = sum(x*amt for x, amt in entries)
+    totalReturned = sum(x*amt for x, amt in exits)
     percentReturn = float((totalReturned - totalSpent) / (totalSpent))
     buyHoldReturn = float((closes[-1] - closes[0]) / closes[0])
-    print("Total profits made: {}".format(round(profit, 4)))
+
+    print("BACKTESTING STRATEGY: {}".format(type(strategy).__name__))
+    print("Total profits made: {}".format(round(profit, 5)))
     print("Return percent: {:.0%}".format(percentReturn))
     print("Number of orders executed: {}".format(numOrders))
     print("\nCompare to return from buying and holding: {:.0%}".format(buyHoldReturn))
+    print("\n")
     return profit
 
 
