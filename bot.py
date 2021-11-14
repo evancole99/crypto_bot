@@ -11,6 +11,7 @@ from binance.enums import *
 
 # TODO:
 # Ensure bot CONVERTS ALL HOLDINGS TO USDT when termination signal is given
+# Stop loss (trailing stop %, stop % below entry)
 
 
 # All symbols for Binance webstreams are lowercase
@@ -18,15 +19,15 @@ symbol_lower = strategies.TRADE_SYMBOL.lower()
 
 SOCKET = "wss://stream.binance.com:9443/ws/{}@kline_{}".format(symbol_lower,strategies.KLINE_INTERVAL)
 
+
 closes = []
-highs = []
-lows = []
 
 open_positions = []
 
 client = Client(config.API_KEY, config.API_SECRET, tld='us')
 
 strategy = None
+binance_fee = 0.001
 
 # determine bot strategy
 
@@ -86,9 +87,9 @@ def order(symbol, side, quantity, order_type=Client.ORDER_TYPE_MARKET):
         price = filled[0]['price']
         
         if side == Client.SIDE_BUY:
-            open_positions.append(float(price))
-        elif side == Client.SIDE_SELL:
-            entry = open_positions.pop(len(open_positions) - 1)
+            candleID = len(candles)-1
+            qty = quantity - (quantity * binance_fee)
+            open_positions.append((float(price), qty, candleID))
 
         # Send notification
         notify_user(side, symbol, price, quantity)
@@ -97,6 +98,7 @@ def order(symbol, side, quantity, order_type=Client.ORDER_TYPE_MARKET):
         print("Order error: Exception occurred.")
         print(e)
         return False
+
     return True
 
 def on_open(ws):
@@ -112,22 +114,37 @@ def on_message(ws, message):
 
     candle = json_msg['k']
     is_closed = candle['x']
+    openPrice = candle['o']
     close = candle['c']
     high = candle['h']
     low = candle['l']
+    closeTime = candle['T']
+    vol = candle['v']
 
     if is_closed:
 
         print("Candle closed at {}".format(close))
-        closes.append(float(close))
-        highs.append(float(high))
-        lows.append(float(low))
-        # print("Num of closes so far: {}".format(len(closes)))
+        candleDict = dict('open': float(openPrice), 'close': float(close), 'high': float(high), 'low': float(low), 'vol': float(vol), 'time': closeTime)
+        closes.append(candleDict)
 
         if len(closes) > strategy_interval: 
 
-            np_closes = numpy.array(closes)
-            signal = strategy.signal(np_closes, highs, lows)
+            if strategies.SL_ENABLED:
+                # Check if stop loss hit
+                sl_id = strategies.stop_loss(float(close), candles, open_positions)
+
+                if sl_id >= 0:
+                    print("{} STOP LOSS TRIGGERED".format(strategies.SL_TYPE))
+                    sellQty = open_positions[sl_id][1]
+                    print("SELLING {} {}, ENTRY {}".format(sellQty, strategies.TRADE_SYMBOL, open_positions[sl_id][0]))
+                    order_success = order(strategies.TRADE_SYMBOL, Client.SIDE_SELL, sellQty, Client.ORDER_TYPE_MARKET)
+                    
+                    if order_success:
+                        print("ORDER SUCCESS")
+                        open_positions.pop(sl_id)
+
+
+            signal = strategy.signal(closes)
 
             if signal == "SELL":
                 print("SELL SIGNAL RECEIVED")
@@ -137,14 +154,12 @@ def on_message(ws, message):
                     # Sell all open positions 
                     print("PLACING SELL ORDER")
 
-                    # binance sell order
-                    # subtract binance's 0.1% spot trading fee
-                    commission = strategies.TRADE_QUANTITY * 0.001
-                    sellQty = (strategies.TRADE_QUANTITY - commission) * len(open_positions)
+                    sellQty = sum(q for p, q, i in open_positions)
                     order_success = order(strategies.TRADE_SYMBOL, Client.SIDE_SELL, sellQty, Client.ORDER_TYPE_MARKET)
                     
                     if order_success:
                         print("ORDER SUCCESS")
+                        open_positions = []
                 
                 else:
                     print("Not in position. Nothing to do.")

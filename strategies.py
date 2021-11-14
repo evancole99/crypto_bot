@@ -1,9 +1,8 @@
 import talib, numpy
 
 # STRATEGY SELECTOR
-# All currently implemented strategies
 # To select a strategy, provide one of the strategies from the list below as a command line argument when running the Python script.
-# Example: python3 bot.py RSI
+# Example: python3 bot.py RSI <PARAM1> <PARAM2> <...>
 
 
 # == STRATEGIES ==
@@ -16,6 +15,10 @@ TRADE_SYMBOL = 'ETHUSDT' # trade symbol (MAKE SURE IT IS SPELLED EXACTLY CORRECT
 TRADE_QUANTITY = 0.01 # quantity of asset per trade
 POSITIONS_ALLOWED = 2 # number of open positions bot may have at once
 KLINE_INTERVAL = '1h' # candlestick interval to trade on
+SL_ENABLED = True
+SL_TYPE = 'TRAILING' # trailing or limit
+SL_PERCENT = 0.05 # percent below stop loss to sell
+
 
 matypes = {
             'MA': 0, # moving average
@@ -29,6 +32,45 @@ matypes = {
             'TRIMA': talib.MA_Type.TRIMA, # triangular moving average
             'WMA': talib.MA_Type.WMA # weighted moving average
             }
+
+
+
+def get_np_list(candles, key):
+    closes = []
+    for i in candles:
+        closes.append(i.get(key))
+    
+    data = numpy.array(closes)
+    return data
+
+def stop_loss(currClose, candles, open_positions):
+
+    currPrice = currClose
+
+    if len(open_positions) == 0:
+        return -1
+
+    for i in range(len(open_positions)):
+        stopPrice = 0
+
+        if SL_TYPE == 'LIMIT':
+            # Stop limit
+            stopPrice = open_positions[i][0] * (1 - SL_PERCENT)
+
+        elif SL_TYPE == 'TRAILING':
+            # Trailing stop
+            entryID = open_positions[i][2]
+            entryCandle = candles[entryID]
+
+            # Get all closing prices from entry candle to now (inclusive)
+            closes = get_np_list(candles[entryID-1:], 'close')
+            localHigh = numpy.max(closes)
+
+            stopPrice = localHigh * (1 - SL_PERCENT)
+
+        if currPrice <= stopPrice:
+            return i
+
 
 class RSI:
 
@@ -44,7 +86,9 @@ class RSI:
     def get_interval(self):
         return self.RSI_PERIOD
 
-    def signal(self, closes, *_):
+    def signal(self, candles):
+
+        closes = get_np_list(candles, 'close')
         rsi = talib.RSI(closes, self.RSI_PERIOD)
         # print(rsi)
         last_rsi = rsi[-1]
@@ -71,7 +115,10 @@ class BBANDS:
     def get_interval(self):
         return self.BBANDS_PERIOD
 
-    def signal(self, closes, *_):
+    def signal(self, candles):
+        
+        closes = get_np_list(candles, 'close')
+
         upper, middle, lower = talib.BBANDS(closes, timeperiod=self.BBANDS_PERIOD, matype=0)
         upper = upper[-1]
         middle = middle[-1]
@@ -107,8 +154,10 @@ class BBANDS_REVERSION:
     def get_interval(self):
         return self.BBANDS_PERIOD
 
-    def signal(self, closes, highs, lows): 
+    def signal(self, candles): 
         
+        closes = get_np_list(candles, 'close')
+
         # Use MA Type EMA
         upper, middle, lower = talib.BBANDS(closes, timeperiod=self.BBANDS_PERIOD, nbdevup=self.STDEVUP, nbdevdn=self.STDEVDN, matype=talib.MA_Type.EMA)
         rsi = talib.RSI(closes, self.BBANDS_PERIOD)
@@ -170,8 +219,10 @@ class MA_CROSSOVER():
     def get_interval(self):
         return self.MA_PERIOD_LONG
 
-    def signal(self, closes, *_):
+    def signal(self, candles):
     
+        closes = get_np_list(candles, 'close')
+
         MA_TYPE = matypes.get(self.MATYPE, 0)
         
         MAShort = talib.MA(closes, timeperiod=self.MA_PERIOD_SHORT, matype=MA_TYPE)
@@ -207,7 +258,11 @@ class STOCH():
     def get_interval(self):
         return max([self.FASTK_PRD, self.SLOWK_PRD, self.SLOWD_PRD])
 
-    def signal(self, closes, highs, lows):
+    def signal(self, candles):
+
+        closes = get_np_list(candles, 'close')
+        highs = get_np_list(candles, 'high')
+        lows = get_np_list(candles, 'low')
 
         MA_TYPE = matypes.get(self.MATYPE, 0)
 
