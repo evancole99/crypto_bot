@@ -6,7 +6,8 @@ import numpy
 SL_ENABLED = True
 SL_TYPE = 'TRAILING'
 SL_PERCENT = 0.05
-
+INVESTMENT_AMOUNT = 100.0
+binance_fee = 0.001
 
 def get_np_list(candles, key):
     closes = []
@@ -49,6 +50,7 @@ def stop_loss(currClose, candles, open_positions):
 
 
 def backtest(strategy, cs, amtPerTrade, numPositionsAllowed):
+    account_balance = INVESTMENT_AMOUNT
 
     get_int = getattr(strategy, "get_interval", None)
     if not callable(get_int):
@@ -61,7 +63,6 @@ def backtest(strategy, cs, amtPerTrade, numPositionsAllowed):
     entries = []
     exits = []
     numOrders = 0
-    profit = 0.0
 
     if (len(cs) <= period):
         print("Error: Indicator period exceeds amount of available price data.")
@@ -80,65 +81,69 @@ def backtest(strategy, cs, amtPerTrade, numPositionsAllowed):
                 sl_id = stop_loss(float(currClose), candles, positions)
 
                 if sl_id >= 0:
-                    print("{} STOP LOSS TRIGGERED".format(SL_TYPE))
                     sellQty = positions[sl_id][1]
-                    print("SELLING {}, ENTRY {}".format(sellQty, positions[sl_id][0]))
-                    exits.append((currClose, sellQty))
-                    profit += (currClose * sellQty) - (positions[sl_id][0] * sellQty)
+                    #print("{} STOP LOSS TRIGGERED".format(SL_TYPE))
+                    #print("SELLING {}, ENTRY {}".format(sellQty, positions[sl_id][0]))
+
+                    exits.append((currClose, (sellQty * (1 - binance_fee))))
+                    account_balance += (currClose * sellQty)
                     numOrders += 1
                     positions.pop(sl_id)
-
-
 
         signal = strategy.signal(candles)
 
         if signal == "BUY":
 
             if len(positions) < numPositionsAllowed:
-                positions.append((currClose, amtPerTrade, len(candles)-1))
-                entries.append((currClose, amtPerTrade))
-                numOrders += 1
+                amtSpent = amtPerTrade * currClose
+
+                if amtSpent <= account_balance:
+                    # Enough funds exist
+                    account_balance =  account_balance - amtSpent
+                    amtBought = amtPerTrade * (1 - binance_fee) # reflect binance's fee
+                    positions.append((currClose, amtBought, len(candles)-1))
+                    entries.append((currClose, amtBought))
+                    numOrders += 1
 
         elif signal == "SELL": # sell ALL positions
 
             if len(positions) > 0:
-                exits.append((currClose, amtPerTrade))
-                sellPrice = currClose
+                sellQty = sum(amt for entry, amt, cID in positions)
+                amtReceived = (sellQty * currClose) * (1 - binance_fee)
+                account_balance += amtReceived
+                exits.append((currClose, sellQty))
                 numOrders += 1
-                for entry, amt, cID in positions:
-                    profit += (sellPrice * amt) - (entry * amt)
                 positions = []
         n += 1
 
+    
     if (len(entries)) == 0:
-        print("No trades executed in given timeline.")
+        # print("No trades executed in given timeline.")
         return 0
-    if (len(positions)) > 0:
-        #print("Not all positions were closed.")
-        #print("Remaining positions: ")
-        #print(positions)
-        #print("\nClosing remaining positions at last closing value and calculating profits...")
 
+    if (len(positions)) > 0:
+        # Some positions remained open at the end
+        # Close positions and add profits
         totAmt = sum(amt for entry, amt, cID in positions)
-        totSpentRemaining = sum(amt*entry for entry, amt, cID in positions)
         lastClose = candles[-1].get('close')
         exits.append((lastClose, totAmt))
-        profit += (lastClose * totAmt) - (totSpentRemaining)
+        amtReceived = (totAmt * lastClose) * (1 - binance_fee)
+        account_balance += amtReceived
         
         positions = []
     
-
-    totalSpent = sum(x*amt for x, amt in entries)
-    totalReturned = sum(x*amt for x, amt in exits)
-    percentReturn = float((totalReturned - totalSpent) / (totalSpent))
+    profit = account_balance - INVESTMENT_AMOUNT
+    percentReturn = float(profit / INVESTMENT_AMOUNT)
     buyHoldReturn = float((candles[-1].get('close') - candles[0].get('close')) / candles[0].get('close'))
 
+    print("\n")
+    print("==============================")
     print("BACKTESTING STRATEGY: {}".format(type(strategy).__name__))
-    print("Total profits made: {}".format(round(profit, 5)))
-    print("Return percent: {:.0%}".format(percentReturn))
+    print("Total profits: {}".format(round(profit, 5)))
+    print("Return: {:.0%}".format(percentReturn))
     print("Number of orders executed: {}".format(numOrders))
     print("\nCompare to return from buying and holding: {:.0%}".format(buyHoldReturn))
-    print("\n")
+    print("==============================")
     return profit
 
 

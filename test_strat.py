@@ -1,6 +1,6 @@
 # Backtester program template
 
-import sys
+import sys, itertools
 from backtester import backtest, getdata
 import config
 import strategies # Import strategy script
@@ -10,7 +10,7 @@ import strategies # Import strategy script
 symbol = "ETHUSDT"
 interval = "4h"
 numCandles = 300
-amtPerTrade = 0.1
+amtPerTrade = 0.01
 numPositionsAllowed = 1
 
 
@@ -19,6 +19,7 @@ candles = getdata.get_historical(symbol, interval, numCandles)
 
 c = []
 
+matypes = ['MA', 'EMA', 'SMA', 'DEMA', 'KAMA', 'MAMA', 'T3', 'TEMA', 'TRIMA', 'WMA']
 
 # Parse unformatted kline data
 # Can store lots more data than shown below (see getdata function)
@@ -31,45 +32,38 @@ for i in range(len(candles)):
 # Initialize strategies to backtest
 
 
-def backtest_MA_Crossover():
-    # Backtest all MA types for MA crossover strategy
-    shortPeriod = 5
-    longPeriod = 9
+def backtest_MA_CROSSOVER(shortPeriod, longPeriod, matype):
 
-    matypes = ['MA', 'EMA', 'SMA', 'DEMA', 'KAMA', 'MAMA', 'T3', 'TEMA', 'TRIMA', 'WMA']
+    print("Testing {}".format(m))
+    strategy = strategies.MA_CROSSOVER(shortPeriod, longPeriod, matype)
+    profit = backtest.backtest(strategy, c, amtPerTrade, numPositionsAllowed)
 
-    bestProfit = 0
-    bestStrat = ""
-
-    for m in matypes:
-        print("Testing {}".format(m))
-        strategy = strategies.MA_CROSSOVER(shortPeriod, longPeriod, m)
-        profit = backtest.backtest(strategy, c, amtPerTrade, numPositionsAllowed)
-        if profit > bestProfit:
-            bestProfit = profit
-            bestStrat = m
-
-    print("{}, {} timeframe, {} candles, {} positions allowed".format(symbol, interval, numCandles, numPositionsAllowed))
-
-    print("Best MA type: {}".format(bestStrat))
-    print("Return: {}".format(round(profit, 5)))
+    return profit
 
 def backtest_STOCH():
 
     STOCH_OVERBOUGHT = 80.0
     STOCH_OVERSOLD = 20.0
+    # [[fastk periods], [slowk periods], [slowd periods]]
     FASTK_PRDS = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
     SLOWK_PRDS = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
-    SLOWD_PRD = 3
-    MATYPE = "MA"
+    SLOWD_PRD = [3, 4, 5, 6, 7, 8, 9]
+
+    TEST_PRDS = [FASTK_PRDS, SLOWK_PRDS, SLOWD_PRDS, matypes]
 
     bestProfit = 0
     bestFastK = 0
     bestSlowK = 0
+    bestSlowD = 0
+    bestMA = ''
 
-    for i in range(len(FASTK_PRDS)):
-        FASTK_PRD = FASTK_PRDS[i]
-        SLOWK_PRD = SLOWK_PRDS[i]
+    test_possibilities = list(itertools.product(*TEST_PRDS))
+
+    for i in range(len(test_possibilities)):
+        FASTK_PRD = test_possibilities[i][0]
+        SLOWK_PRD = test_possibilities[i][1]
+        SLOWD_PRD = test_possibilities[i][2]
+        MATYPE = test_possibilities[i][3]
 
         strategy = strategies.STOCH(STOCH_OVERBOUGHT, STOCH_OVERSOLD, FASTK_PRD, SLOWK_PRD, SLOWD_PRD, MATYPE)
         profit = backtest.backtest(strategy, c, amtPerTrade, numPositionsAllowed)
@@ -77,10 +71,99 @@ def backtest_STOCH():
             bestProfit = profit
             bestFastK = FASTK_PRD
             bestSlowK = SLOWK_PRD
+            bestSlowD = SLOWD_PRD
+            bestMA = MATYPE
 
-    print("Best Fast K period: {}".format(bestFastK))
-    print("Best Slow K period: {}".format(bestSlowK))
+    print("Best parameters:")
+    print("FastK: {}, SlowK: {}, SlowD: {}".format(bestFastK, bestSlowK, bestSlowD))
+    print("Best MA: {}".format(bestMA))
     print("Profits: {}".format(bestProfit))
 
-backtest_MA_Crossover()
+def backtest_BBANDS_REVERSION():
 
+    BBANDS_PERIODS = [7, 8, 9, 10, 11, 12, 13, 14]
+    STDEVUP = 2
+    STDEVDN = 2
+    RSI_OVERBOUGHT = 70.0
+    RSI_OVERSOLD = 30.0
+
+    bestProfit = 0.0
+    bestPeriod = 0
+
+    for i in BBANDS_PERIODS:
+        strategy = strategies.BBANDS_REVERSION(i, STDEVUP, STDEVDN, RSI_OVERBOUGHT, RSI_OVERSOLD)
+
+        profit = backtest.backtest(strategy, c, amtPerTrade, numPositionsAllowed)
+        if profit > bestProfit:
+            bestProfit = profit
+            bestPeriod = i
+        
+    print("Best BB Period: {}".format(bestPeriod))
+    print("Profit: {}".format(bestProfit))
+
+
+def optimize_params(strategy, paramNames, test_combinations):
+
+    best_profit = 0.0
+    best_params = []
+
+    for i in range(len(test_combinations)):
+        params = test_combinations[i]
+        strat = None
+
+        if strategy == "MA_CROSSOVER":
+            strat = strategies.MA_CROSSOVER(params)
+        elif strategy == "STOCH":
+            strat = strategies.STOCH(params)
+        elif strategy == "BBANDS_REVERSION":
+            strat = strategies.BBANDS_REVERSION(params)
+
+        profit = backtest.backtest(strat, c, amtPerTrade, numPositionsAllowed)
+
+        if profit > best_profit:
+            best_profit = profit
+            best_params = params
+    
+    print("Best profit achieved: {}".format(best_profit))
+    print("Best parameters:")
+    for p in range(len(paramNames)):
+        print("{}: {}".format(paramNames[p], best_params[p]))
+    return best_params
+
+
+def optimize_strategy(strategy, params):
+    # Params is list of lists, containing all parameter values to optimize
+
+    test_combinations = list(itertools.product(*params))
+    best_params = []
+    param_names = []
+
+    if strategy == "MA_CROSSOVER":
+        param_names = ['shortPeriod', 'longPeriod', 'matype']
+    elif strategy == "STOCH":
+        param_names = ['stoch_overbought', 'stoch_oversold', 'fastk', 'slowk', 'slowd', 'matype']
+    elif strategy == "BBANDS_REVERSION":
+        param_names = ['bb_period', 'stdevup', 'stdevdn', 'rsi_overbought', 'rsi_oversold']
+    
+    best_params = optimize_params(strategy, param_names, test_combinations)
+ 
+    
+
+def main():
+
+    # Initialize list of parameters to optimize
+    bb_prds = [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+    stdevups = [2, 3]
+    stdevdns = [2, 3]
+    rsi_overboughts = [60.0, 65.0, 70.0, 75.0, 80.0, 85.0, 90.0]
+    rsi_oversolds = [40.0, 35.0, 30.0, 25.0, 20.0, 15.0, 10.0]
+
+    # Compile parameters to one list
+    params = [bb_prds, stdevups, stdevdns, rsi_overboughts, rsi_oversolds]
+
+    # Optimize strategy
+    strat = "BBANDS_REVERSION"
+    optimize_strategy(strat, params)
+
+if __name__ == "__main__":
+    main()
