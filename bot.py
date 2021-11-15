@@ -23,11 +23,11 @@ SOCKET = "wss://stream.binance.com:9443/ws/{}@kline_{}".format(symbol_lower,stra
 closes = []
 
 open_positions = []
+account_balance = strategies.INVESTMENT_AMOUNT
 
 client = Client(config.API_KEY, config.API_SECRET, tld='us')
 
 strategy = None
-binance_fee = 0.001
 
 # determine bot strategy
 
@@ -76,7 +76,7 @@ def notify_user(order_type, symbol, price, qty):
                 'Request to IFTTT webhook returned error %s.\nThe response:\n%s' % (response.status_code, response.text))
 
 def order(symbol, side, quantity, order_type=Client.ORDER_TYPE_MARKET):
-    global open_positions
+    global open_positions, account_balance
 
     try:
         print("Sending order")
@@ -85,11 +85,18 @@ def order(symbol, side, quantity, order_type=Client.ORDER_TYPE_MARKET):
 
         filled = order_data['fills']
         price = filled[0]['price']
-        
+        qty = filled[0]['qty']
+        comm = filled[0]['commission']
+        amtTraded = float(price) * float(qty)
+        qty = float(qty) - float(comm)
+
         if side == Client.SIDE_BUY:
             candleID = len(candles)-1
-            qty = quantity - (quantity * binance_fee)
             open_positions.append((float(price), qty, candleID))
+            account_balance -= amtTraded
+        elif side == Client.SIDE_SELL:
+            amtTraded = float(price) * qty # update amtTraded to account for commission
+            account_balance += amtTraded
 
         # Send notification
         notify_user(side, symbol, price, quantity)
@@ -108,8 +115,8 @@ def on_close(ws):
     print("connection closed")
 
 def on_message(ws, message):
-    global open_positions
-    # print("message received")
+    global open_positions, account_balance
+    
     json_msg = json.loads(message)
 
     candle = json_msg['k']
@@ -124,6 +131,7 @@ def on_message(ws, message):
     if is_closed:
 
         print("Candle closed at {}".format(close))
+        # Initialize new dictionary for candle and add to list of closes
         candleDict = dict('open': float(openPrice), 'close': float(close), 'high': float(high), 'low': float(low), 'vol': float(vol), 'time': closeTime)
         closes.append(candleDict)
 
@@ -171,12 +179,15 @@ def on_message(ws, message):
                     print("Already in position. Nothing to do.")
                 
                 else:
-                    print("PLACING BUY ORDER")
-                    # binance buy order
-                    order_success = order(strategies.TRADE_SYMBOL, Client.SIDE_BUY, strategies.TRADE_QUANTITY, Client.ORDER_TYPE_MARKET)
-                    
-                    if order_success:
-                        print("ORDER SUCCESS")
+                    spendAmt = float(close) * strategies.TRADE_QUANTITY
+
+                    if spendAmt <= account_balance:
+                        print("PLACING BUY ORDER")
+                        # binance buy order
+                        order_success = order(strategies.TRADE_SYMBOL, Client.SIDE_BUY, strategies.TRADE_QUANTITY, Client.ORDER_TYPE_MARKET)
+                        
+                        if order_success:
+                            print("ORDER SUCCESS")
 
 
 # Uncomment this line to view verbose connection information

@@ -13,13 +13,14 @@ STRATEGY_LIST = ["RSI", "BBANDS", "BBANDS_REVERSION", "MA_CROSSOVER", "STOCH"]
 # Bot configuration
 TRADE_SYMBOL = 'ETHUSDT' # trade symbol (MAKE SURE IT IS SPELLED EXACTLY CORRECT)
 TRADE_QUANTITY = 0.01 # quantity of asset per trade
+INVESTMENT_AMOUNT = 100.0 # amount of paired asset allowed to trade
 POSITIONS_ALLOWED = 2 # number of open positions bot may have at once
 KLINE_INTERVAL = '1h' # candlestick interval to trade on
 SL_ENABLED = True
 SL_TYPE = 'TRAILING' # trailing or limit
 SL_PERCENT = 0.05 # percent below stop loss to sell
 
-
+# All types of moving averages supported by TA Lib
 matypes = {
             'MA': 0, # moving average
             'EMA': talib.MA_Type.EMA, # exponential moving average
@@ -78,10 +79,14 @@ class RSI:
     # This strategy utilizes classic RSI with a default period of 14.
     # When the RSI of an asset is determined to be overbought or oversold
     # (default parameters are 70 and 30), sell and buy signals are triggered.
-    def __init__(self, RSI_PERIOD=14, RSI_OVERBOUGHT=70.0, RSI_OVERSOLD=30.0):
-        self.RSI_PERIOD = RSI_PERIOD
-        self.RSI_OVERBOUGHT = RSI_OVERBOUGHT
-        self.RSI_OVERSOLD = RSI_OVERSOLD
+    def __init__(self, params):
+        if len(params) != 3:
+            print("Error: Strategy initialize with wrong number of parameters.")
+            exit(1)
+
+        self.RSI_PERIOD = params[0]
+        self.RSI_OVERBOUGHT = params[1]
+        self.RSI_OVERSOLD = params[2]
 
     def get_interval(self):
         return self.RSI_PERIOD
@@ -109,8 +114,11 @@ class BBANDS:
     # When the price of the asset closes below or above the lower or upper bands,
     # a buy or sell signal is triggered.
 
-    def __init__(self, BBANDS_PERIOD=20):
-        self.BBANDS_PERIOD = BBANDS_PERIOD
+    def __init__(self, params):
+        if len(params) != 1:
+            print("Error: Strategy initialize with wrong number of parameters.")
+            exit(1)
+        self.BBANDS_PERIOD = params[0]
 
     def get_interval(self):
         return self.BBANDS_PERIOD
@@ -143,13 +151,17 @@ class BBANDS_REVERSION:
     # EMA, if the price reaches its set upper or lower bounds and is within
     # an acceptable RSI range, the strategy will return buy or sell signals.
     
-    def __init__(self, BBANDS_PERIOD=12, STDEVUP=2, STDEVDN=2, RSI_OVERBOUGHT=70.0, RSI_OVERSOLD=30.0):
-        self.BBANDS_PERIOD = BBANDS_PERIOD
+    def __init__(self, params):
+        if len(params) != 5:
+            print("Error: Strategy initialize with wrong number of parameters.")
+            exit(1)
+
+        self.BBANDS_PERIOD = params[0]
         # number of standard deviations from mean
-        self.STDEVUP = STDEVUP
-        self.STDEVDN = STDEVDN
-        self.RSI_OVERBOUGHT = RSI_OVERBOUGHT
-        self.RSI_OVERSOLD = RSI_OVERSOLD
+        self.STDEVUP = params[1]
+        self.STDEVDN = params[2]
+        self.RSI_OVERBOUGHT = params[3]
+        self.RSI_OVERSOLD = params[4]
 
     def get_interval(self):
         return self.BBANDS_PERIOD
@@ -157,6 +169,8 @@ class BBANDS_REVERSION:
     def signal(self, candles): 
         
         closes = get_np_list(candles, 'close')
+        lows = get_np_list(candles, 'low')
+        highs = get_np_list(candles, 'high')
 
         # Use MA Type EMA
         upper, middle, lower = talib.BBANDS(closes, timeperiod=self.BBANDS_PERIOD, nbdevup=self.STDEVUP, nbdevdn=self.STDEVDN, matype=talib.MA_Type.EMA)
@@ -211,10 +225,14 @@ class MA_CROSSOVER():
     # When the short MA crosses from above the long MA, a sell signal is generated.
   
 
-    def __init__(self, MA_PERIOD_SHORT=5, MA_PERIOD_LONG=9, MATYPE="MA"):
-        self.MA_PERIOD_SHORT = MA_PERIOD_SHORT
-        self.MA_PERIOD_LONG = MA_PERIOD_LONG
-        self.MATYPE = MATYPE
+    def __init__(self, params):
+        if len(params) != 3:
+            print("Error: Strategy initialize with wrong number of parameters.")
+            exit(1)
+
+        self.MA_PERIOD_SHORT = params[0]
+        self.MA_PERIOD_LONG = params[1]
+        self.MATYPE = params[2]
 
     def get_interval(self):
         return self.MA_PERIOD_LONG
@@ -247,13 +265,17 @@ class MA_CROSSOVER():
 
 class STOCH():
 
-    def __init__(self, STOCH_OVERBOUGHT=80.0, STOCH_OVERSOLD=20.0, FASTK_PRD=5, SLOWK_PRD=14, SLOWD_PRD=3, MATYPE="MA"):
-        self.STOCH_OVERBOUGHT = STOCH_OVERBOUGHT
-        self.STOCH_OVERSOLD = STOCH_OVERSOLD
-        self.FASTK_PRD = FASTK_PRD
-        self.SLOWK_PRD = SLOWK_PRD
-        self.SLOWD_PRD = SLOWD_PRD
-        self.MATYPE = MATYPE
+    def __init__(self, params):
+        if len(params) != 6:
+            print("Error: Strategy initialize with wrong number of parameters.")
+            exit(1)
+
+        self.STOCH_OVERBOUGHT = params[0]
+        self.STOCH_OVERSOLD = params[1]
+        self.FASTK_PRD = params[2]
+        self.SLOWK_PRD = params[3]
+        self.SLOWD_PRD = params[4]
+        self.MATYPE = params[5]
 
     def get_interval(self):
         return max([self.FASTK_PRD, self.SLOWK_PRD, self.SLOWD_PRD])
