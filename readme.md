@@ -30,9 +30,9 @@ And that's it! Make sure this file stays safe - anyone who has access to your AP
 All strategy configuration is done in strategies.py, which contains several starter strategies using technical analysis from TA-Lib.  
 
 Each strategy is its own separate class. Strategies may be implemented in any way desired, but each class must contain the following methods:  
-* \_\_init\_\_() - initializes class with default parameters 
+* \_\_init\_\_(params) - initializes class with list of parameters 
 * get\_interval() - returns integer value corresponding to the strategy's period
-* signal(closes, highs, lows) - returns signal "BUY" or "SELL" for given price data. Highs and lows lists are optional, and may be voided.
+* signal(closes, candles) - returns signal "BUY" or "SELL" for given price data. Candles parameter expects a list of dictionaries.
 
 ## Running the bot
 
