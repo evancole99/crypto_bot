@@ -7,7 +7,7 @@ This trade bot utilizes websockets to read kline data from Binance datastreams, 
 
 To install the requires dependencies and libraries, the requirements can be found in requirements.txt. Simply run *pip3 install -r requirements.txt* in the command line.
 
-In order for TALib to function properly, the prerequisite C library must be built and installed. See [how to install TALib dependencies](mrjbq7.github.io/ta-lib/install.html) for help.
+In order for TALib to function properly, the prerequisite C library must be built and installed. See [how to install TALib dependencies](https://mrjbq7.github.io/ta-lib/install.html) for help.
 
 ## Setting Up
 
