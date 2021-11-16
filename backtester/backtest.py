@@ -17,6 +17,17 @@ def get_np_list(candles, key):
     data = numpy.array(closes)
     return data
 
+def print_results(strategy, profit, percentReturn, buyHoldReturn, numOrders):
+    print("\n")
+    print("==============================")
+    print("BACKTESTING STRATEGY: {}".format(type(strategy).__name__))
+    print("Total profits: {}".format(round(profit, 5)))
+    print("Return: {:.0%}".format(percentReturn))
+    print("Number of orders executed: {}".format(numOrders))
+    print("\nCompare to return from buying and holding: {:.0%}".format(buyHoldReturn))
+    print("==============================")
+
+
 def stop_loss(currClose, candles, open_positions):
 
     currPrice = currClose
@@ -46,8 +57,6 @@ def stop_loss(currClose, candles, open_positions):
             return i
 
     return -1
-
-
 
 def backtest(strategy, cs, amtPerTrade, numPositionsAllowed):
     account_balance = INVESTMENT_AMOUNT
@@ -135,15 +144,10 @@ def backtest(strategy, cs, amtPerTrade, numPositionsAllowed):
     profit = account_balance - INVESTMENT_AMOUNT
     percentReturn = float(profit / INVESTMENT_AMOUNT)
     buyHoldReturn = float((candles[-1].get('close') - candles[0].get('close')) / candles[0].get('close'))
+    
+    # print("\nCompare to return from buying and holding: {:.0%}".format(buyHoldReturn))
+    # print_results(strategy, profit, percentReturn, buyHoldReturn, numOrders)
 
-    print("\n")
-    print("==============================")
-    print("BACKTESTING STRATEGY: {}".format(type(strategy).__name__))
-    print("Total profits: {}".format(round(profit, 5)))
-    print("Return: {:.0%}".format(percentReturn))
-    print("Number of orders executed: {}".format(numOrders))
-    print("\nCompare to return from buying and holding: {:.0%}".format(buyHoldReturn))
-    print("==============================")
     return profit
 
 

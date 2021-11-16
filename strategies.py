@@ -8,7 +8,7 @@ import talib, numpy
 # == STRATEGIES ==
 # List of all currently implemented strategies
 # Ensure they are entered EXACTLY as shown as command line arguments
-STRATEGY_LIST = ["RSI", "BBANDS", "BBANDS_REVERSION", "MA_CROSSOVER", "STOCH"]
+STRATEGY_LIST = ["RSI", "BBANDS", "BBANDS_REVERSION", "MA_CROSSOVER", "STOCH", "MACD_CROSSOVER"]
 
 # Bot configuration
 TRADE_SYMBOL = 'ETHUSDT' # trade symbol (MAKE SURE IT IS SPELLED EXACTLY CORRECT)
@@ -152,7 +152,7 @@ class BBANDS_REVERSION:
     # an acceptable RSI range, the strategy will return buy or sell signals.
     
     def __init__(self, params):
-        if len(params) != 5:
+        if len(params) != 6:
             print("Error: Strategy initialize with wrong number of parameters.")
             exit(1)
 
@@ -162,6 +162,7 @@ class BBANDS_REVERSION:
         self.STDEVDN = params[2]
         self.RSI_OVERBOUGHT = params[3]
         self.RSI_OVERSOLD = params[4]
+        self.MATYPE = params[5]
 
     def get_interval(self):
         return self.BBANDS_PERIOD
@@ -172,8 +173,9 @@ class BBANDS_REVERSION:
         lows = get_np_list(candles, 'low')
         highs = get_np_list(candles, 'high')
 
-        # Use MA Type EMA
-        upper, middle, lower = talib.BBANDS(closes, timeperiod=self.BBANDS_PERIOD, nbdevup=self.STDEVUP, nbdevdn=self.STDEVDN, matype=talib.MA_Type.EMA)
+        MA_TYPE = matypes.get(self.MATYPE, 0)
+
+        upper, middle, lower = talib.BBANDS(closes, timeperiod=self.BBANDS_PERIOD, nbdevup=self.STDEVUP, nbdevdn=self.STDEVDN, matype=MA_TYPE)
         rsi = talib.RSI(closes, self.BBANDS_PERIOD)
         last_rsi = rsi[-1]
 
@@ -216,7 +218,7 @@ class BBANDS_REVERSION:
             return None
 
 
-class MA_CROSSOVER():
+class MA_CROSSOVER:
 
     # Moving Average crossover strategy
     # This strategy attempts to profit from using short-term moving average
@@ -263,7 +265,7 @@ class MA_CROSSOVER():
         
 
 
-class STOCH():
+class STOCH:
 
     def __init__(self, params):
         if len(params) != 6:
@@ -294,6 +296,44 @@ class STOCH():
             return "BUY"
         elif slowk[-1] > self.STOCH_OVERBOUGHT and slowd[-1] > self.STOCH_OVERBOUGHT:
             return "SELL"
+
+
+class MACD_CROSSOVER:
+
+    def __init__(self, params):
+        if len(params) != 4:
+            print("Error: Strategy initialize with wrong number of parameters.")
+            exit(1)
+
+        self.FASTPERIOD = params[0]
+        self.SLOWPERIOD = params[1]
+        self.SIGNALPERIOD = params[2]
+        self.MATYPE = params[3]
+
+    def get_interval(self):
+        return self.SLOWPERIOD
+
+    def signal(self, candles):
+ 
+        closes = get_np_list(candles, 'close')
+         
+        MA_TYPE = matypes.get(self.MATYPE, 0)
+
+        prevCloses = closes[:-1]
+
+        macd, macdsignal, hist = talib.MACDEXT(closes, fastperiod=self.FASTPERIOD, slowperiod=self.SLOWPERIOD, signalperiod=self.SIGNALPERIOD, fastmatype=MA_TYPE, slowmatype=MA_TYPE, signalmatype=MA_TYPE)
+
+        currHist = hist[-1]
+        prevHist = hist[-2]
+
+
+        if currHist >= 0:
+            # check if histogram switched directions
+            if prevHist < 0:
+                return "BUY"
+        elif currHist < 0:
+            if prevHist > 0:
+                return "SELL"
 
 
 
