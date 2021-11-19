@@ -7,7 +7,7 @@ import talib, numpy
 
 # == STRATEGIES ==
 # List of all currently implemented strategies
-# Ensure they are entered EXACTLY as shown as command line arguments
+# Ensure the strings below EXACTLY match the class name
 STRATEGY_LIST = ["RSI", "BBANDS", "BBANDS_REVERSION", "MA_CROSSOVER", "STOCH", "MACD_CROSSOVER"]
 
 # Bot configuration
@@ -15,7 +15,7 @@ TRADE_SYMBOL = 'ETHUSDT' # trade symbol (MAKE SURE IT IS SPELLED EXACTLY CORRECT
 TRADE_QUANTITY = 0.01 # quantity of asset per trade
 INVESTMENT_AMOUNT = 100.0 # amount of paired asset allowed to trade
 POSITIONS_ALLOWED = 2 # number of open positions bot may have at once
-KLINE_INTERVAL = '1h' # candlestick interval to trade on
+KLINE_INTERVAL = '5m' # candlestick interval to trade on
 SL_ENABLED = True
 SL_TYPE = 'TRAILING' # trailing or limit
 SL_PERCENT = 0.05 # percent below stop loss to sell
@@ -34,7 +34,12 @@ matypes = {
             'WMA': talib.MA_Type.WMA # weighted moving average
             }
 
-
+def get_strat(s, params):
+    if s not in STRATEGY_LIST:
+        print("Error: Invalid strategy selected.")
+        return None
+    obj = eval("%s(%r)" % (s, params))
+    return obj
 
 def get_np_list(candles, key):
     closes = []
@@ -297,6 +302,7 @@ class STOCH:
         elif slowk[-1] > self.STOCH_OVERBOUGHT and slowd[-1] > self.STOCH_OVERBOUGHT:
             return "SELL"
 
+        return None
 
 class MACD_CROSSOVER:
 
@@ -334,6 +340,7 @@ class MACD_CROSSOVER:
         elif currHist < 0:
             if prevHist > 0:
                 return "SELL"
+        return None
 
 
 

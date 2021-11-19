@@ -8,7 +8,7 @@ import strategies # Import strategy script
 
 # Configure settings to backtest
 symbol = "ETHUSDT"
-interval = "4h"
+interval = "1h"
 numCandles = 300
 amtPerTrade = 0.01
 numPositionsAllowed = 1
@@ -53,11 +53,12 @@ def optimize_params(strategy, paramNames, test_combinations):
             best_params = params
     
     percentReturn = float(best_profit / backtest.INVESTMENT_AMOUNT)
-    print("Best profit achieved: {}".format(best_profit))
+    print("Best profit achieved: {}".format(round(best_profit, 5)))
     print("Return: {:.0%}".format(percentReturn))
     print("Best parameters:")
     for p in range(len(paramNames)):
         print("{}: {}".format(paramNames[p], best_params[p]))
+    print("\n")
     return best_params
 
 
@@ -74,7 +75,7 @@ def optimize_strategy(strategy, params):
     elif strategy == "STOCH":
         param_names = ['stoch_overbought', 'stoch_oversold', 'fastk', 'slowk', 'slowd', 'matype']
     elif strategy == "BBANDS_REVERSION":
-        param_names = ['bb_period', 'stdevup', 'stdevdn', 'rsi_overbought', 'rsi_oversold']
+        param_names = ['bb_period', 'stdevup', 'stdevdn', 'rsi_overbought', 'rsi_oversold', 'matype']
     elif strategy == "MACD_CROSSOVER":
         param_names = ['fastperiod', 'slowperiod', 'signalperiod', 'matype']
     
@@ -99,11 +100,11 @@ def main():
     rsi_oversolds = [40.0, 35.0, 30.0, 25.0, 20.0, 15.0, 10.0]
 
     # STOCH PARAMETERS
-    stoch_overboughts = [60.0, 65.0, 70.0, 75.0, 80.0, 85.0]
-    stoch_oversolds = [40.0, 35.0, 30.0, 25.0, 20.0, 15.0]
-    fastks = [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
-    slowks = [1, 2, 3, 4, 5, 6, 7, 8, 9]
-    slowds = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+    stoch_overboughts = [55.0, 60.0, 65.0, 70.0, 75.0, 80.0]
+    stoch_oversolds = [45.0, 40.0, 35.0, 30.0, 25.0, 20.0]
+    fastks = [9, 10, 11, 12, 13, 14]
+    slowks = [1, 2, 3, 4]
+    slowds = [1, 2, 3, 4, 5]
 
     # MACD_CROSSOVER PARAMETERS
     fast_prds = [9, 10, 11, 12, 13, 14, 15, 16]

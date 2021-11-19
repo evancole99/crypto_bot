@@ -36,28 +36,12 @@ s = sys.argv[1]
 
 # initialize full list of parameters from command line args
 params = []
+
 for x in range(2, n):
-    val = sys.argv[x]
-    if (float(val) != 0):
-        params.append(float(val))
+    params.append(sys.argv[x])
 
-
-if s not in strategies.STRATEGY_LIST:
-    print("Error: Invalid strategy selected.")
-    exit(1)
-if s == "RSI":
-    strategy = strategies.RSI(*params)
-
-elif s == "BBANDS":
-    print("Bollinger Bands strategy selected")
-    strategy = strategies.BBANDS(*params)
-
-elif s == "BBANDS_REVERSION":
-    print("Bollinger Bands Reversion strategy selected")
-    strategy = strategies.BBANDS_REVERSION(*params)
-
-else:
-    print("Error")
+strategy = strategies.get_strat(s, params)
+if strategy == None:
     exit(1)
 
 strategy_interval = strategy.get_interval()
@@ -132,7 +116,15 @@ def on_message(ws, message):
 
         print("Candle closed at {}".format(close))
         # Initialize new dictionary for candle and add to list of closes
-        candleDict = dict('open': float(openPrice), 'close': float(close), 'high': float(high), 'low': float(low), 'vol': float(vol), 'time': closeTime)
+        candleDict = {
+                'open': float(openPrice),
+                'close': float(close),
+                'high': float(high),
+                'low': float(low),
+                'vol': float(vol),
+                'time': closeTime
+                }
+
         closes.append(candleDict)
 
         if len(closes) > strategy_interval: 

@@ -59,6 +59,7 @@ async def main():
                 stdevdn = int(input("Standard deviations below: "))
                 rsi_oversold = float(input("RSI oversold: "))
                 rsi_overbought = float(input("RSI overbought: "))
+                ma_type = str(input("MA type (e.g. MA, EMA): "))
 
                 params = {
                         'type': bot_type,
@@ -66,7 +67,8 @@ async def main():
                         'stdevup': stdevup,
                         'stdevdn': stdevdn,
                         'rsi_oversold': rsi_oversold,
-                        'rsi_overbought': rsi_overbought
+                        'rsi_overbought': rsi_overbought,
+                        'matype': ma_type
                         }
             else:
                 print("Error: Wrong bot type selected")
